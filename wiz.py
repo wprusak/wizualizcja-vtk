@@ -1,6 +1,32 @@
 import vtk
 from pathlib import Path
 
+
+# funkcja tworząca LUT do segmentów
+def create_lut(colors):
+    lut = vtk.vtkLookupTable()
+    lut.SetNumberOfColors(141)
+    lut.SetTableRange(0,140)
+    lut.Build()
+    
+    lut.SetTableValue(0, colors.GetColor4d('Black'))
+    lut.SetTableValue(3, colors.GetColor4d('white')) 
+    lut.SetTableValue(4, colors.GetColor4d('beige')) 
+    lut.SetTableValue(5, colors.GetColor4d('orange'))  
+    lut.SetTableValue(9, colors.GetColor4d('misty_rose'))  
+    lut.SetTableValue(10, colors.GetColor4d('plum'))  
+    lut.SetTableValue(12, colors.GetColor4d('tomato'))  
+    lut.SetTableValue(14, colors.GetColor4d('raspberry'))  
+    lut.SetTableValue(17, colors.GetColor4d('banana'))  
+    lut.SetTableValue(19, colors.GetColor4d('peru'))  
+    lut.SetTableValue(21, colors.GetColor4d('pink'))  
+    lut.SetTableValue(23, colors.GetColor4d('powder_blue')) 
+    lut.SetTableValue(24, colors.GetColor4d('carrot'))  
+    lut.SetTableValue(25, colors.GetColor4d('wheat'))  
+    lut.SetTableValue(28, colors.GetColor4d('violet'))  
+    lut.SetTableValue(140, colors.GetColor4d('white'))  
+    return lut 
+
 colors = vtk.vtkNamedColors()
 
 
@@ -13,13 +39,20 @@ renWin.AddRenderer(aRenderer)
 iRen = vtk.vtkRenderWindowInteractor()
 iRen.SetRenderWindow(renWin)
 
+# określenie ścieżki do plików 
 dirname = Path("inner-ear-2018-02/image-volumes")
-filename = dirname/"Ear-CT.nrrd"
+filename = dirname/"Ear-CT.nrrd"  # ścieżka do raw data
+segfilename = dirname/"Ear-seg.nrrd"# ścieżka do segmentacji 
 
 
 
 reader = vtk.vtkNrrdReader()
 reader.SetFileName(filename)
+
+segmentreader = vtk.vtkNrrdReader()
+segmentreader.SetFileName(segfilename)
+
+# do wywalenia prawdopodobnie 
 
 skinExtractor = vtk.vtkMarchingCubes()
 skinExtractor.SetInputConnection(reader.GetOutputPort())
@@ -34,6 +67,10 @@ skin.SetMapper(skinMapper)
 #skin.GetProperty().SetDiffuseColor(colors.GetColor3d("SkinColor"))
 skin.GetProperty().SetOpacity(.3)
 
+# Dotąd 
+
+
+# tworzenie obrysu
 outlineData = vtk.vtkOutlineFilter()
 outlineData.SetInputConnection(reader.GetOutputPort())
 
@@ -48,7 +85,7 @@ outline.GetProperty().SetColor(colors.GetColor3d("Black"))
 # ustawienie lookup tables 
 
 bwLut = vtk.vtkLookupTable()
-bwLut.SetTableRange(0, 2000)
+bwLut.SetTableRange(0, 4000)
 bwLut.SetSaturationRange(0, 0)
 bwLut.SetHueRange(0, 0)
 bwLut.SetValueRange(0, 1)
@@ -60,22 +97,48 @@ bwcolors.SetInputConnection(reader.GetOutputPort())
 bwcolors.SetLookupTable(bwLut)
 bwcolors.Update()
 
-# stworzenie trzech actorów i ustawienie ich pozycji 
+# stworzenie trzech actorów do płaszczyzn ortogonalnych i ustawienie ich pozycji 
 sagittal = vtk.vtkImageActor()
 sagittal.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
-sagittal.SetDisplayExtent(255, 255, 0, 512, 0, 414)
+sagittal.SetDisplayExtent(255, 255, 0, 511, 0, 413)
 
 
 axial = vtk.vtkImageActor()
 axial.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
-axial.SetDisplayExtent(0, 512, 0, 512, 207, 207)
+axial.SetDisplayExtent(0, 511, 0, 511, 207, 207)
 
 coronal = vtk.vtkImageActor()
 coronal.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
-coronal.SetDisplayExtent(0, 512, 255, 255, 0, 414)
+coronal.SetDisplayExtent(0, 511, 255, 255, 0, 413)
 
 
+# ustawienie segmentlut 
+segment_lut = create_lut(colors)
 
+#mapowanie segmentów z użyciem lut
+segmentcolors = vtk.vtkImageMapToColors()
+segmentcolors.SetInputConnection(segmentreader.GetOutputPort())
+segmentcolors.SetLookupTable(segment_lut)
+segmentcolors.Update()
+
+# stworzenie actora do segmentów (ustawienie pozycju pokrywającej się płaszczyzną coronal 
+# i opacity na 0.7)
+segmentscoronal = vtk.vtkImageActor()
+segmentscoronal.GetMapper().SetInputConnection(segmentcolors.GetOutputPort())
+segmentscoronal.SetDisplayExtent(0, 511, 255, 255, 0, 413)
+segmentscoronal.GetProperty().SetOpacity(.8)
+
+segmentsaxial = vtk.vtkImageActor()
+segmentsaxial.GetMapper().SetInputConnection(segmentcolors.GetOutputPort())
+segmentsaxial.SetDisplayExtent(0, 511, 0, 511, 207, 207)
+segmentsaxial.GetProperty().SetOpacity(.8)
+
+segmentssagittal = vtk.vtkImageActor()
+segmentssagittal.GetMapper().SetInputConnection(segmentcolors.GetOutputPort())
+segmentssagittal.SetDisplayExtent(255, 255, 0, 511, 0, 413)
+segmentssagittal.GetProperty().SetOpacity(.8)
+
+# ustawienie kamery
 aCamera = vtk.vtkCamera()
 aCamera.SetViewUp(0, 0, -1)
 aCamera.SetPosition(0, -1, 0)
@@ -84,13 +147,18 @@ aCamera.ComputeViewPlaneNormal()
 aCamera.Azimuth(30.0)
 aCamera.Elevation(30.0)
 
-    # Actors are added to the renderer. An initial camera view is created.
-    # The Dolly() method moves the camera towards the FocalPoint,
-    # thereby enlarging the image.
+
+# dodanie actorów do renderera 
 aRenderer.AddActor(outline)
+
 aRenderer.AddActor(sagittal)
 aRenderer.AddActor(axial)
 aRenderer.AddActor(coronal)
+
+aRenderer.AddActor(segmentscoronal)
+aRenderer.AddActor(segmentsaxial)
+aRenderer.AddActor(segmentssagittal)
+
 #aRenderer.AddActor(skin)
 aRenderer.SetActiveCamera(aCamera)
 aRenderer.ResetCamera()
@@ -102,3 +170,4 @@ aCamera.Dolly(1.5)
 
 iRen.Initialize()
 iRen.Start()
+
