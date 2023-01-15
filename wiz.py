@@ -63,16 +63,16 @@ bwcolors.Update()
 # stworzenie trzech actorów i ustawienie ich pozycji 
 sagittal = vtk.vtkImageActor()
 sagittal.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
-sagittal.SetDisplayExtent(255, 255, 0, 512, 0, 512)
+sagittal.SetDisplayExtent(255, 255, 0, 512, 0, 414)
 
 
 axial = vtk.vtkImageActor()
 axial.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
-axial.SetDisplayExtent(0, 512, 0, 512, 200, 200)
+axial.SetDisplayExtent(0, 512, 0, 512, 207, 207)
 
 coronal = vtk.vtkImageActor()
 coronal.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
-coronal.SetDisplayExtent(0, 512, 255, 255, 0, 512)
+coronal.SetDisplayExtent(0, 512, 255, 255, 0, 414)
 
 
 
