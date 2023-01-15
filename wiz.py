@@ -1,5 +1,5 @@
 import vtk
-
+from pathlib import Path
 
 aRenderer = vtk.vtkRenderer()
 renWin = vtk.vtkRenderWindow()
@@ -9,9 +9,10 @@ renWin.AddRenderer(aRenderer)
 iRen = vtk.vtkRenderWindowInteractor()
 iRen.SetRenderWindow(renWin)
 
+dirname = Path("inner-ear-2018-02/image-volumes")
+filename = dirname/"Ear-CT.nrrd"
 
-
-filename = "C:\\Users\\Wicia\\Desktop\\wizualizacja projekt\\inner-ear-2018-02\\image-volumes\\Ear-CT.nrrd"
+#filename = "C:\\Users\\Wicia\\Desktop\\wizualizacja projekt\\inner-ear-2018-02\\image-volumes\\Ear-CT.nrrd"
 
 reader = vtk.vtkNrrdReader()
 reader.SetFileName(filename)
