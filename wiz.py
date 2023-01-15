@@ -1,6 +1,10 @@
 import vtk
 from pathlib import Path
 
+colors = vtk.vtkNamedColors()
+
+
+
 aRenderer = vtk.vtkRenderer()
 renWin = vtk.vtkRenderWindow()
 renWin.AddRenderer(aRenderer)
@@ -12,7 +16,7 @@ iRen.SetRenderWindow(renWin)
 dirname = Path("inner-ear-2018-02/image-volumes")
 filename = dirname/"Ear-CT.nrrd"
 
-#filename = "C:\\Users\\Wicia\\Desktop\\wizualizacja projekt\\inner-ear-2018-02\\image-volumes\\Ear-CT.nrrd"
+
 
 reader = vtk.vtkNrrdReader()
 reader.SetFileName(filename)
@@ -38,7 +42,38 @@ mapOutline.SetInputConnection(outlineData.GetOutputPort())
 
 outline = vtk.vtkActor()
 outline.SetMapper(mapOutline)
-#outline.GetProperty().SetColor(colors.GetColor3d("Black"))
+outline.GetProperty().SetColor(colors.GetColor3d("Black"))
+
+
+# ustawienie lookup tables 
+
+bwLut = vtk.vtkLookupTable()
+bwLut.SetTableRange(0, 2000)
+bwLut.SetSaturationRange(0, 0)
+bwLut.SetHueRange(0, 0)
+bwLut.SetValueRange(0, 1)
+bwLut.Build()  
+
+# mapowanie danych z użyciem LUT
+bwcolors = vtk.vtkImageMapToColors()
+bwcolors.SetInputConnection(reader.GetOutputPort())
+bwcolors.SetLookupTable(bwLut)
+bwcolors.Update()
+
+# stworzenie trzech actorów i ustawienie ich pozycji 
+sagittal = vtk.vtkImageActor()
+sagittal.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
+sagittal.SetDisplayExtent(255, 255, 0, 512, 0, 512)
+
+
+axial = vtk.vtkImageActor()
+axial.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
+axial.SetDisplayExtent(0, 512, 0, 512, 200, 200)
+
+coronal = vtk.vtkImageActor()
+coronal.GetMapper().SetInputConnection(bwcolors.GetOutputPort())
+coronal.SetDisplayExtent(0, 512, 255, 255, 0, 512)
+
 
 
 aCamera = vtk.vtkCamera()
@@ -53,9 +88,14 @@ aCamera.Elevation(30.0)
     # The Dolly() method moves the camera towards the FocalPoint,
     # thereby enlarging the image.
 aRenderer.AddActor(outline)
-aRenderer.AddActor(skin)
+aRenderer.AddActor(sagittal)
+aRenderer.AddActor(axial)
+aRenderer.AddActor(coronal)
+#aRenderer.AddActor(skin)
 aRenderer.SetActiveCamera(aCamera)
 aRenderer.ResetCamera()
+aRenderer.SetBackground(colors.GetColor3d("Blue"))
+
 aCamera.Dolly(1.5)
 
 
