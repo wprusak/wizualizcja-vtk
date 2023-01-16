@@ -1,5 +1,6 @@
 import vtk
 from pathlib import Path
+import os
 
 
 # funkcja tworząca LUT do segmentów
@@ -102,7 +103,15 @@ iRen = vtk.vtkRenderWindowInteractor()
 iRen.SetRenderWindow(renWin)
 
 # określenie ścieżki do plików 
+#dirname = Path(os.path.realpath(os.path.dirname(__file__)))/"inner-ear-2018-2"/"image-volumes"
+
+
+os.chdir(Path(__file__).resolve().parent)
 dirname = Path("inner-ear-2018-02/image-volumes")
+
+
+
+
 filename = dirname/"Ear-CT.nrrd"  # ścieżka do raw data
 segfilename = dirname/"Ear-seg.nrrd"# ścieżka do segmentacji 
 
