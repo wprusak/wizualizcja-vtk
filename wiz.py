@@ -27,6 +27,68 @@ def create_lut(colors):
     lut.SetTableValue(140, colors.GetColor4d('white'))  
     return lut 
 
+def create_iso_surface_actor(file_name, tissue):
+    areader = vtk.vtkNrrdReader()
+    areader.SetFileName(file_name)
+    areader.Update()
+
+    select_tissue = vtk.vtkImageThreshold()
+    select_tissue.ThresholdBetween(tissue, tissue)
+    select_tissue.SetInValue(255)
+    select_tissue.SetOutValue(0)
+    select_tissue.SetInputConnection(areader.GetOutputPort())
+
+    gaussian_radius = 1
+    gaussian_standard_deviation = 2.0
+    gaussian = vtk.vtkImageGaussianSmooth()
+    gaussian.SetStandardDeviations(gaussian_standard_deviation, gaussian_standard_deviation,
+                                   gaussian_standard_deviation)
+    gaussian.SetRadiusFactors(gaussian_radius, gaussian_radius, gaussian_radius)
+    gaussian.SetInputConnection(select_tissue.GetOutputPort())
+
+    # iso_value = 63.5
+    iso_value = 127.5
+
+    try:
+        iso_surface = vtk.vtkFlyingEdges3D()
+    except AttributeError:
+        iso_surface = vtk.vtkMarchingCubes()
+
+    iso_surface.SetInputConnection(gaussian.GetOutputPort())
+    iso_surface.ComputeScalarsOff()
+    iso_surface.ComputeGradientsOff()
+    iso_surface.ComputeNormalsOff()
+    iso_surface.SetValue(0, iso_value)
+
+    smoothing_iterations = 20
+    pass_band = 0.001
+    feature_angle = 60.0
+    smoother = vtk.vtkWindowedSincPolyDataFilter()
+    smoother.SetInputConnection(iso_surface.GetOutputPort())
+    smoother.SetNumberOfIterations(smoothing_iterations)
+    smoother.BoundarySmoothingOff()
+    smoother.FeatureEdgeSmoothingOff()
+    smoother.SetFeatureAngle(feature_angle)
+    smoother.SetPassBand(pass_band)
+    smoother.NonManifoldSmoothingOn()
+    smoother.NormalizeCoordinatesOff()
+    smoother.Update()
+
+    normals = vtk.vtkPolyDataNormals()
+    normals.SetInputConnection(iso_surface.GetOutputPort())
+    normals.SetFeatureAngle(feature_angle)
+
+    stripper = vtk.vtkStripper()
+    stripper.SetInputConnection(normals.GetOutputPort())
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(stripper.GetOutputPort())
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    return actor
+
 colors = vtk.vtkNamedColors()
 
 
@@ -138,6 +200,40 @@ segmentssagittal.GetMapper().SetInputConnection(segmentcolors.GetOutputPort())
 segmentssagittal.SetDisplayExtent(255, 255, 0, 511, 0, 413)
 segmentssagittal.GetProperty().SetOpacity(.8)
 
+# tissue actor 
+
+tissueactor = create_iso_surface_actor(segfilename,17)
+tissueactor.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(17)[:3])
+tissueactor.GetProperty().SetDiffuse(1.0)
+tissueactor.GetProperty().SetSpecular(.5)
+tissueactor.GetProperty().SetSpecularPower(100)
+
+tissueactor1 = create_iso_surface_actor(segfilename,4)
+tissueactor1.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(4)[:3])
+tissueactor1.GetProperty().SetDiffuse(1.0)
+tissueactor1.GetProperty().SetSpecular(.5)
+tissueactor1.GetProperty().SetSpecularPower(100)
+
+
+tissueactor2 = create_iso_surface_actor(segfilename,10)
+tissueactor2.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(10)[:3])
+tissueactor2.GetProperty().SetDiffuse(1.0)
+tissueactor2.GetProperty().SetSpecular(.5)
+tissueactor2.GetProperty().SetSpecularPower(100)
+
+tissueactor3 = create_iso_surface_actor(segfilename,140)
+tissueactor3.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(140)[:3])
+tissueactor3.GetProperty().SetDiffuse(1.0)
+tissueactor3.GetProperty().SetSpecular(.5)
+tissueactor3.GetProperty().SetSpecularPower(100)
+
+tissueactor4 = create_iso_surface_actor(segfilename,14)
+tissueactor4.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(14)[:3])
+tissueactor4.GetProperty().SetDiffuse(1.0)
+tissueactor4.GetProperty().SetSpecular(.5)
+tissueactor4.GetProperty().SetSpecularPower(100)
+
+
 # ustawienie kamery
 aCamera = vtk.vtkCamera()
 aCamera.SetViewUp(0, 0, -1)
@@ -158,6 +254,12 @@ aRenderer.AddActor(coronal)
 aRenderer.AddActor(segmentscoronal)
 aRenderer.AddActor(segmentsaxial)
 aRenderer.AddActor(segmentssagittal)
+
+aRenderer.AddActor(tissueactor)
+aRenderer.AddActor(tissueactor1)
+aRenderer.AddActor(tissueactor2)
+aRenderer.AddActor(tissueactor3)
+aRenderer.AddActor(tissueactor4)
 
 #aRenderer.AddActor(skin)
 aRenderer.SetActiveCamera(aCamera)
