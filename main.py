@@ -1,16 +1,21 @@
 import vtk
 from pathlib import Path
 import os
-from functions import create_lut, create_iso_surface_actor
+from functions import create_lut, create_iso_surface_actor,make_slider_widget,SliderProperties,SliderCB
 
 
 colors = vtk.vtkNamedColors()
 
+#ustawienie rendererów, okna i interaktora
 
 aRenderer = vtk.vtkRenderer()
 renWin = vtk.vtkRenderWindow()
 renWin.AddRenderer(aRenderer)
+ren_2 = vtk.vtkRenderer()
+renWin.AddRenderer(ren_2)
 
+aRenderer.SetViewport(0.0, 0.0, 0.7, 1.0)
+ren_2.SetViewport(0.7, 0.0, 1, 1)
 
 iRen = vtk.vtkRenderWindowInteractor()
 iRen.SetRenderWindow(renWin)
@@ -97,38 +102,17 @@ segmentssagittal.GetMapper().SetInputConnection(segmentcolors.GetOutputPort())
 segmentssagittal.SetDisplayExtent(255, 255, 0, 511, 0, 413)
 segmentssagittal.GetProperty().SetOpacity(.8)
 
-# tissue actor 
+# ustawienie tissue actors 
+tissues = [4,10,14,17,140,23]
+tissueactors = []
 
-tissueactor = create_iso_surface_actor(segfilename,17)
-tissueactor.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(17)[:3])
-tissueactor.GetProperty().SetDiffuse(1.0)
-tissueactor.GetProperty().SetSpecular(.5)
-tissueactor.GetProperty().SetSpecularPower(100)
-
-tissueactor1 = create_iso_surface_actor(segfilename,4)
-tissueactor1.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(4)[:3])
-tissueactor1.GetProperty().SetDiffuse(1.0)
-tissueactor1.GetProperty().SetSpecular(.5)
-tissueactor1.GetProperty().SetSpecularPower(100)
-
-
-tissueactor2 = create_iso_surface_actor(segfilename,10)
-tissueactor2.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(10)[:3])
-tissueactor2.GetProperty().SetDiffuse(1.0)
-tissueactor2.GetProperty().SetSpecular(.5)
-tissueactor2.GetProperty().SetSpecularPower(100)
-
-tissueactor3 = create_iso_surface_actor(segfilename,140)
-tissueactor3.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(140)[:3])
-tissueactor3.GetProperty().SetDiffuse(1.0)
-tissueactor3.GetProperty().SetSpecular(.5)
-tissueactor3.GetProperty().SetSpecularPower(100)
-
-tissueactor4 = create_iso_surface_actor(segfilename,14)
-tissueactor4.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(14)[:3])
-tissueactor4.GetProperty().SetDiffuse(1.0)
-tissueactor4.GetProperty().SetSpecular(.5)
-tissueactor4.GetProperty().SetSpecularPower(100)
+for tissue in tissues :
+    tissueactor = create_iso_surface_actor(segfilename,tissue)
+    tissueactor.GetProperty().SetDiffuseColor(segment_lut.GetTableValue(tissue)[:3])
+    tissueactor.GetProperty().SetDiffuse(1.0)
+    tissueactor.GetProperty().SetSpecular(.5)
+    tissueactor.GetProperty().SetSpecularPower(100)
+    tissueactors.append(tissueactor)
 
 
 # ustawienie kamery
@@ -150,17 +134,32 @@ aRenderer.AddActor(coronal)
 aRenderer.AddActor(segmentscoronal)
 aRenderer.AddActor(segmentsaxial)
 aRenderer.AddActor(segmentssagittal)
-aRenderer.AddActor(tissueactor)
-aRenderer.AddActor(tissueactor1)
-aRenderer.AddActor(tissueactor2)
-aRenderer.AddActor(tissueactor3)
-aRenderer.AddActor(tissueactor4)
+
+for tissueact in tissueactors:
+    aRenderer.AddActor(tissueact)
 
 aRenderer.SetActiveCamera(aCamera)
 aRenderer.ResetCamera()
-aRenderer.SetBackground(colors.GetColor3d("Blue"))
-
+aRenderer.SetBackground(colors.GetColor3d("LightSteelBlue"))
+ren_2.SetBackground(colors.GetColor3d("MidnightBlue"))
 aCamera.Dolly(1.5)
+
+slider_properties = SliderProperties()
+slider_properties.value_initial = .4
+slider_properties.title = "Labirynth opacity"
+
+slider_properties.p1 = [0.05, .55]
+slider_properties.p2 = [0.25, .55]
+cb = SliderCB(tissueactors[1].GetProperty())
+
+slider_widget = make_slider_widget(slider_properties, colors, segment_lut, 10)
+slider_widget.SetInteractor(iRen)
+slider_widget.SetAnimationModeToAnimate()
+slider_widget.EnabledOn()
+slider_widget.SetCurrentRenderer(ren_2)
+slider_widget.AddObserver(vtk.vtkCommand.InteractionEvent, cb)
+renWin.SetSize(1280,720)
+renWin.SetWindowName('Wizualizacja')
 
 iRen.Initialize()
 iRen.Start()
