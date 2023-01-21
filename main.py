@@ -148,8 +148,8 @@ slider_properties = SliderProperties()
 slider_properties.value_initial = .4
 slider_properties.title = "Labirynth opacity"
 
-slider_properties.p1 = [0.05, .55]
-slider_properties.p2 = [0.25, .55]
+slider_properties.p1 = [0.05, .45]
+slider_properties.p2 = [0.25, .45]
 cb = SliderCB(tissueactors[1].GetProperty())
 
 slider_widget = make_slider_widget(slider_properties, colors, segment_lut, 10)
@@ -158,6 +158,21 @@ slider_widget.SetAnimationModeToAnimate()
 slider_widget.EnabledOn()
 slider_widget.SetCurrentRenderer(ren_2)
 slider_widget.AddObserver(vtk.vtkCommand.InteractionEvent, cb)
+
+slider_properties1 = SliderProperties()
+slider_properties1.value_initial = .4
+slider_properties1.title = "Tymphanic membrane opacity"
+
+slider_properties1.p1 = [0.05, .65]
+slider_properties1.p2 = [0.25, .65]
+cb1 = SliderCB(tissueactors[0].GetProperty())
+
+slider_widget1 = make_slider_widget(slider_properties1, colors, segment_lut, 4)
+slider_widget1.SetInteractor(iRen)
+slider_widget1.SetAnimationModeToAnimate()
+slider_widget1.EnabledOn()
+slider_widget1.SetCurrentRenderer(ren_2)
+slider_widget1.AddObserver(vtk.vtkCommand.InteractionEvent, cb1)
 
 
 renWin.SetSize(1280,720)
