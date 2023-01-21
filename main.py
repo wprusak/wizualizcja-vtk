@@ -158,8 +158,12 @@ slider_widget.SetAnimationModeToAnimate()
 slider_widget.EnabledOn()
 slider_widget.SetCurrentRenderer(ren_2)
 slider_widget.AddObserver(vtk.vtkCommand.InteractionEvent, cb)
+
+
 renWin.SetSize(1280,720)
 renWin.SetWindowName('Wizualizacja')
+trackball_style  = vtk.vtkInteractorStyleTrackballCamera()
+iRen.SetInteractorStyle(trackball_style)
 
 iRen.Initialize()
 iRen.Start()
